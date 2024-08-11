@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"container/ring"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"sync"
@@ -47,6 +48,7 @@ func generator() chan int {
 		for {
 			scanner.Scan()
 			s = scanner.Text()
+			log.Println("Пользователь ввел: ", s)
 			if s == "" {
 				fmt.Println("Выход. Получаем последние результаты.")
 				return
@@ -58,6 +60,7 @@ func generator() chan int {
 				fmt.Println("введено не число")
 				continue
 			}
+			log.Println("Функция generator отправила: ", i)
 			output <- i
 		}
 	}()
@@ -72,6 +75,7 @@ func reporter(wg *sync.WaitGroup, input <-chan int) {
 		defer wg.Done()
 		for value := range input {
 			fmt.Println("Получены данные: ", value)
+			log.Println("Функция reporter получила: ", value)
 		}
 	}()
 
@@ -93,8 +97,10 @@ func filterStage1(input <-chan int) chan int {
 					return
 				}
 				// Обработка полученного значения и передача следующей рутине
+				log.Println("Функция filterStage1 получила: ", value)
 				if value >= 0 {
 					output <- value
+					log.Println("Функция filterStage1 отправила: ", value)
 				}
 			}
 		}
@@ -119,8 +125,10 @@ func filterStage2(input <-chan int) chan int {
 					return
 				}
 				// Обработка полученного значения и передача следующей рутине
+				log.Println("Функция filterStage2 получила: ", value)
 				if value%3 == 0 && value != 0 {
 					output <- value
+					log.Println("Функция filterStage2 отправила: ", value)
 				}
 			}
 		}
@@ -147,6 +155,7 @@ func bufferStage(input <-chan int) chan int {
 		for {
 			select {
 			case value, ok := <-input:
+				log.Println("Функция bufferStage получила: ", value)
 				// Если канал закрыт, то данных больше не будет и сигнал к завершению работы рутины
 				if !ok {
 					// Закрываем следующий канал, чтобы оповестить следующую рутину о завершении
@@ -155,6 +164,7 @@ func bufferStage(input <-chan int) chan int {
 				}
 				m.Lock()
 				r.Value = value
+				log.Println("Функция bufferStage отправила в буфер: ", value)
 				r = r.Next()
 				m.Unlock()
 			}
@@ -172,6 +182,7 @@ func bufferStage(input <-chan int) chan int {
 					switch r.Value.(type) {
 					case int:
 						output <- r.Value.(int)
+						log.Println("Функция bufferStage прочитала из буфера: ", r.Value.(int))
 					}
 					r.Value = nil
 					r = r.Next()
