@@ -1,13 +1,12 @@
 FROM golang:latest AS builder
 
-WORKDIR /pipeline
-ENV CGO_ENABLED=0
-COPY main.go /pipeline/
-RUN go build -o /pipeline/pipeline /pipeline/main.go
+WORKDIR /app
+COPY main.go /app/
+RUN go build -o /app/pipeline /app/main.go
 
-FROM scratch
+FROM alpine:latest
 LABEL version="1.0"
 LABEL maintainer="AnyKey<Any@k.ey>"
 WORKDIR /
-COPY --from=builder /pipeline/pipeline /pipeline
+COPY --from=builder /app/pipeline .
 CMD [ "/pipeline" ]
